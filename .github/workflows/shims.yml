@@ -1,7 +1,7 @@
 name: shims-up-to-date
 
-# AGENTS.md is generated from SKILL.md + portable/STANDARDS.md. Fail the build if
-# someone edited a source without regenerating, so the portable shim never drifts.
+# All harness shims are generated from SKILL.md + portable/STANDARDS.md. Fail the
+# build if someone edited a source without regenerating, so the trees never drift.
 on:
   pull_request:
   push:
