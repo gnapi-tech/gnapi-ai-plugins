@@ -1,0 +1,6 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+# Gnapi — Codex reference config. Copy to ~/.codex/config.toml (global) or keep
+# project-local. Codex reads AGENTS.md and .codex/AGENTS.md for instructions.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "live"
