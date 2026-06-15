@@ -17,5 +17,5 @@ jobs:
           node-version: 22
       - name: Regenerate shims
         run: node portable/build-shims.mjs
-      - name: Fail if AGENTS.md is stale
-        run: git diff --exit-code -- AGENTS.md
+      - name: Fail if any generated shim is stale
+        run: git diff --exit-code
