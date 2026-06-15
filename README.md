@@ -64,19 +64,36 @@ The machine-checkable subset (naming format, `no-console`, `no-magic-numbers`,
 (code-reviewer + QA agents before merge) is enforced server-side by branch
 protection + required CI status checks, not by a local hook.
 
+## Using on other agents (Codex, opencode, Cursor, Gemini)
+
+The plugin format (marketplace, `Skill` tool, PreToolUse hook) is Claude-specific,
+but the **playbook content is portable**. `portable/build-shims.mjs` generates a
+self-contained `AGENTS.md` (skill steps + inlined standards) from the same
+sources, so non-Claude agents run the identical playbook — they just trigger it
+manually and have the standards inlined instead of hook-injected.
+
+```shell
+node portable/build-shims.mjs   # regenerate AGENTS.md from SKILL.md + portable/STANDARDS.md
+```
+
+Per-platform install and what does/doesn't carry over: see [`portable/README.md`](portable/README.md).
+`AGENTS.md` is generated — edit the sources, not the output; CI fails on drift.
+
 ## Repository layout
 
 ```
 .
 ├── .claude-plugin/
 │   └── marketplace.json              # marketplace catalog (lists all plugins)
+├── .github/workflows/
+│   └── shims.yml                     # fails if AGENTS.md is out of date
 ├── plugins/
 │   ├── gnapi-scaffolding/
 │   │   ├── .claude-plugin/
 │   │   │   └── plugin.json            # plugin manifest
 │   │   └── skills/
 │   │       └── scaffold-nestjs-service/
-│   │           └── SKILL.md           # the skill
+│   │           └── SKILL.md           # the skill (source of truth)
 │   └── gnapi-standards/
 │       ├── .claude-plugin/
 │       │   └── plugin.json            # plugin manifest
@@ -85,6 +102,11 @@ protection + required CI status checks, not by a local hook.
 │       └── scripts/
 │           ├── precode-standards.sh   # node guard / launcher (Write/Edit)
 │           └── precode-standards.js   # injects standards as additionalContext
+├── portable/
+│   ├── STANDARDS.md                   # canonical standards (mirror of the hook text)
+│   ├── build-shims.mjs                # generator: sources → AGENTS.md
+│   └── README.md                      # per-platform install + porting notes
+├── AGENTS.md                          # GENERATED portable shim (Codex/opencode/Cursor/Gemini)
 └── README.md
 ```
 

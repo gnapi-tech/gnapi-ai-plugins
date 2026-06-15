@@ -1,0 +1,21 @@
+name: shims-up-to-date
+
+# AGENTS.md is generated from SKILL.md + portable/STANDARDS.md. Fail the build if
+# someone edited a source without regenerating, so the portable shim never drifts.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Regenerate shims
+        run: node portable/build-shims.mjs
+      - name: Fail if AGENTS.md is stale
+        run: git diff --exit-code -- AGENTS.md
