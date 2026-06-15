@@ -168,17 +168,20 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
 9. **Health + observability.** `/health` endpoint; request logging on; a
    `README.md` with run/test/deploy instructions. Commit message style:
    conventional commits.
-10. **Pre-push review gate (REQUIRED before every push to a feature branch).**
-    Do not `git push` a feature branch until both of these have run and passed
-    on the exact diff being pushed:
+10. **Pre-push review gate (ENFORCED — `git push` is blocked until approved).**
+    The `gnapi-standards` plugin's Bash hook **denies** any `git push` whose HEAD
+    commit has not been approved. To get past it, on the exact diff being pushed:
     - **code-reviewer agent** — reviews code quality, confirms every ask in this
       skill (and the Gnapi standards) is followed strictly, and that
-      maintainability is the priority. Address all CRITICAL/HIGH findings before
-      pushing.
-    - **QA / e2e agent** — exercises the service end-to-end and confirms the
-      critical flows pass.
-    Only push once both are green. The `gnapi-standards` plugin reminds you of
-    this gate when it sees a `git push`. (Then open the PR to `develop`.)
+      maintainability is the priority. Address all CRITICAL/HIGH findings.
+    - **QA / e2e agent** — exercises the service end-to-end; critical flows pass.
+
+    Only once both are green, record approval for the current commit:
+    ```sh
+    git rev-parse HEAD > "$(git rev-parse --absolute-git-dir)/gnapi-review-approved"
+    ```
+    then `git push`. Any new commit changes the SHA and re-arms the gate, so
+    re-review after every change. (Then open the PR to `develop`.)
 
 ## Verification
 

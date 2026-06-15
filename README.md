@@ -25,7 +25,7 @@ Pull future updates with:
 | Plugin | Description | Provides |
 | :----- | :---------- | :------- |
 | `gnapi-scaffolding` | Bakes Gnapi house rules (TDD, gts/Google lint + prettier, husky pre-commit, zod env validation, structured logging + tracing, error catalog, i18n, CI coverage gate) into new services from day one. | skill `scaffold-nestjs-service` |
-| `gnapi-standards` | Pre-code hook: injects Gnapi coding standards before Claude writes source files. | `PreToolUse` hook |
+| `gnapi-standards` | Injects Gnapi coding standards before source writes, and blocks `git push` until the code-reviewer + QA review gate is approved. | `PreToolUse` hooks |
 
 ### gnapi-scaffolding
 
@@ -55,14 +55,24 @@ standards into Claude's context:
 - **Error management** — error-numbered errors, no unhandled exceptions, and
   catch blocks that take a real action + fallback (never log-and-swallow).
 
-It also adds a **pre-push review gate**: on a `git push` a second hook reminds
-you to first run the **code-reviewer agent** (quality, asks-followed,
-maintainability) and a **QA / e2e agent** before pushing a feature branch.
+It also adds an **enforced pre-push review gate**: a second hook **blocks**
+(`permissionDecision: deny`) any `git push` whose HEAD commit has not been
+approved. To pass it, run the **code-reviewer agent** (quality, asks-followed,
+maintainability) and a **QA / e2e agent**, then record approval for the current
+commit:
 
-Both hooks are **non-blocking** (they only inject guidance). The standards hook
-fires **once per session**; the push reminder fires per `git push`. They need
-`node` on `PATH`; if absent they no-op. The machine-checkable subset (naming
-format, `no-console`, `no-magic-numbers`, `no-floating-promises`, coverage) is
+```sh
+git rev-parse HEAD > "$(git rev-parse --absolute-git-dir)/gnapi-review-approved"
+```
+
+then push. The marker holds the approved commit SHA in the repo's git dir (not
+committed); any new commit changes the SHA and re-arms the gate.
+
+The standards hook is **non-blocking** (injects guidance, once per session); the
+push gate **is blocking**. Both need `node` on `PATH` — if absent they no-op, and
+the push gate **fails open** (allows the push) on any git error so it never
+bricks unrelated repos. The machine-checkable subset (naming format,
+`no-console`, `no-magic-numbers`, `no-floating-promises`, coverage) is
 additionally enforced at commit/CI by `gnapi-scaffolding`'s lint overlay and
 pre-commit hook.
 

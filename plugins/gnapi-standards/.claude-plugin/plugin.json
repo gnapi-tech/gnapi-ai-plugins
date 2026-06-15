@@ -2,7 +2,7 @@
   "name": "gnapi-standards",
   "displayName": "Gnapi Coding Standards",
   "version": "0.1.0",
-  "description": "Injects Gnapi coding standards (TDD, SOLID, DRY, naming, why/how comments, no hard-coded literals, structured logging + tracing, error management with catch-must-act) before Claude writes source files, and reminds of the pre-push review gate (code-reviewer + QA agents) on git push.",
+  "description": "Injects Gnapi coding standards (TDD, SOLID, DRY, naming, why/how comments, no hard-coded literals, structured logging + tracing, error management with catch-must-act) before Claude writes source files, and blocks git push until the pre-push review gate (code-reviewer + QA agents) is approved for the current commit.",
   "author": {
     "name": "Gnapi",
     "url": "https://github.com/gnapi-tech"
