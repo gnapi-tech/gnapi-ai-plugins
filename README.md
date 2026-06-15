@@ -22,9 +22,10 @@ Pull future updates with:
 
 ## Plugins
 
-| Plugin | Description | Skills |
-| :----- | :---------- | :----- |
-| `gnapi-scaffolding` | Bakes Gnapi house rules (gts/Google lint + prettier, husky pre-commit, zod env validation, structured logging, error catalog, i18n, CI coverage gate) into new services from day one. | `scaffold-nestjs-service` |
+| Plugin | Description | Provides |
+| :----- | :---------- | :------- |
+| `gnapi-scaffolding` | Bakes Gnapi house rules (TDD, gts/Google lint + prettier, husky pre-commit, zod env validation, structured logging + tracing, error catalog, i18n, CI coverage gate) into new services from day one. | skill `scaffold-nestjs-service` |
+| `gnapi-standards` | Injects Gnapi coding standards into context before Claude writes source files. | `PreToolUse` hook |
 
 ### gnapi-scaffolding
 
@@ -37,19 +38,53 @@ After installing, invoke a skill directly or let Claude pick it up by task:
 `scaffold-nestjs-service` — params `service_name` (kebab-case), `github_org`.
 Scaffolds a production-grade NestJS service compliant with every house rule.
 
+### gnapi-standards
+
+No command to run — once installed it works automatically. On the **first
+source-file write of a session** (`Write`/`Edit`/`MultiEdit`/`NotebookEdit` on a
+`.ts/.js/.py/.go/...` file) a `PreToolUse` hook injects the Gnapi coding
+standards into Claude's context:
+
+- **TDD** — test-first (RED → GREEN → refactor), no production code without a
+  test; keep coverage **> 85%**.
+- **SOLID & DRY** — single-responsibility, depend on abstractions, no copy-paste.
+- **Naming** — meaningful, intent-revealing; no cryptic abbreviations.
+- **Comments** — capture the hidden *why* and *how*, not the obvious *what*.
+- **No hard-coded literals** — extract to named constants in their own files.
+- **Structured logging & tracing** — project logger only, with trace correlation.
+- **Error management** — error-numbered errors, no unhandled exceptions, and
+  catch blocks that take a real action + fallback (never log-and-swallow).
+
+The hook is **non-blocking** (it only injects guidance) and fires **once per
+session** to stay quiet. It needs `node` on `PATH`; if absent it no-ops.
+
+The machine-checkable subset (naming format, `no-console`, `no-magic-numbers`,
+`no-floating-promises`, coverage) is additionally enforced at commit/CI by
+`gnapi-scaffolding`'s lint overlay and pre-commit hook. The **review gate**
+(code-reviewer + QA agents before merge) is enforced server-side by branch
+protection + required CI status checks, not by a local hook.
+
 ## Repository layout
 
 ```
 .
 ├── .claude-plugin/
-│   └── marketplace.json          # marketplace catalog (lists all plugins)
+│   └── marketplace.json              # marketplace catalog (lists all plugins)
 ├── plugins/
-│   └── gnapi-scaffolding/
+│   ├── gnapi-scaffolding/
+│   │   ├── .claude-plugin/
+│   │   │   └── plugin.json            # plugin manifest
+│   │   └── skills/
+│   │       └── scaffold-nestjs-service/
+│   │           └── SKILL.md           # the skill
+│   └── gnapi-standards/
 │       ├── .claude-plugin/
-│       │   └── plugin.json        # plugin manifest
-│       └── skills/
-│           └── scaffold-nestjs-service/
-│               └── SKILL.md        # the skill
+│       │   └── plugin.json            # plugin manifest
+│       ├── hooks/
+│       │   └── hooks.json             # PreToolUse matchers → scripts
+│       └── scripts/
+│           ├── precode-standards.sh   # node guard / launcher (Write/Edit)
+│           └── precode-standards.js   # injects standards as additionalContext
 └── README.md
 ```
 

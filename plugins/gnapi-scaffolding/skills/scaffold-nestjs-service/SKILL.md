@@ -1,12 +1,26 @@
 ---
 name: scaffold-nestjs-service
-description: Use when creating a new NestJS service for Gnapi — scaffolds a production-grade service that complies with every house rule (pnpm, gts/Google lint + prettier, husky pre-commit, zod env validation, structured logging, error catalog, i18n, CI with coverage gate) from day one. Params service_name (kebab-case), github_org.
+description: Use when the user wants to create, scaffold, bootstrap, set up, spin up, or start a new NestJS service / microservice / backend API / service repo for Gnapi. Triggers — "create a nestjs service", "new nestjs microservice", "scaffold a nestjs/backend service", "spin up a nestjs api", "bootstrap a new service", "start a new gnapi service". Produces a production-grade NestJS service that complies with every Gnapi house rule from day one (TDD, pnpm, gts/Google lint + prettier, husky pre-commit follow-checks, zod env validation, structured logging + tracing, error catalog, i18n, >85% coverage, CI). Params service_name (kebab-case), github_org.
 ---
 
 # Skill: scaffold-nestjs-service
 
 Scaffold a production-grade NestJS service that complies with every house rule
 from day one. Params: `service_name` (kebab-case), `github_org`.
+
+## Before you write any code (non-negotiable)
+
+- **TDD.** Every feature and bugfix is test-first: write the failing test
+  (RED), the minimal code to pass (GREEN), then refactor (IMPROVE). No
+  production code ships without a test driving it. Coverage must stay **> 85%**
+  (Step 2 gate).
+- **SOLID & DRY.** Single-responsibility units that depend on abstractions;
+  small substitutable interfaces; prefer composition. No copy-paste logic —
+  one well-named home and one source of truth per rule.
+- The `gnapi-standards` plugin's pre-code hook injects the full Gnapi coding
+  standards (SOLID, DRY, naming, why/how comments, no hard-coded literals,
+  structured logging + tracing, error management with catch-must-act, TDD) on
+  the first source write of a session. This skill assumes those standards hold.
 
 ## Steps
 
@@ -47,14 +61,31 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
      and `"format:check": "gts lint"`. (`gts fix` = ESLint autofix + Prettier
      write; `gts lint` checks both.)
    - `tsconfig.build.json` excluding tests; jest with
-     `coverageThreshold {lines: 80, branches: 70}`.
-3. **Structured logging.** `pnpm add nestjs-pino pino-http`; register
-   `LoggerModule.forRoot` with secret-redacting `redact` list; no `console.*`
-   anywhere (lint-enforced).
-4. **Error catalog.** Create `src/common/errors/error-codes.ts` with numbered
+     `coverageThreshold {statements: 85, lines: 85, functions: 85, branches: 85}`
+     (house floor is **> 85%**).
+3. **Structured logging & tracing.** `pnpm add nestjs-pino pino-http`; register
+   `LoggerModule.forRoot` with a secret-redacting `redact` list and a
+   request-id / trace-correlation field on every log line; no `console.*`
+   anywhere (lint-enforced). **Decorate only in dev:** in `development` use the
+   `pino-pretty` transport (human-readable, colorized); in every other env emit
+   raw JSON (no transport) so log shippers parse it. Gate on `NODE_ENV`:
+   ```ts
+   transport:
+     process.env.NODE_ENV === 'development'
+       ? {target: 'pino-pretty', options: {singleLine: true}}
+       : undefined,
+   ```
+   (`pnpm add -D pino-pretty`.)
+4. **Error management.** Create `src/common/errors/error-codes.ts` with numbered
    codes (`<SVC>-1xxx` input, `2xxx` domain, `3xxx` integration, `4000`
-   internal), an `AppError` class carrying code + context, and a global
-   exception filter registered via `APP_FILTER` that never leaks internals.
+   internal) and an `AppError` class carrying code + context. Register a global
+   exception filter via `APP_FILTER` that maps thrown errors to their
+   error-number and never leaks internals. Rules:
+   - Every thrown error is a well-defined `AppError` with a number — no
+     anonymous `throw new Error('...')`.
+   - **No unhandled exceptions / floating promises** (lint-enforced, Step 8).
+   - **Catch blocks must take a real action + fallback** — retry, compensate,
+     degrade gracefully, or surface a typed `AppError`. Never log-and-swallow.
 5. **i18n from day 1.** `pnpm add nestjs-i18n`; `src/i18n/en/messages.json`; every
    user-facing string goes through it; add eslint `i18next/no-literal-string`
    for any UI-facing packages.
@@ -72,8 +103,15 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
      template `package.json` files (e.g. `@nestjs/schematics/.../files/ts/`)
      that carry a deprecated `tslint`/`git add` lint-staged block and aborts
      every commit with a validation error. (Verified failure mode.)
-   - `pnpm add -D husky lint-staged` → `pnpm exec husky init` →
-     `.husky/pre-commit` runs `pnpm exec lint-staged` then the related tests.
+   - `pnpm add -D husky lint-staged` → `pnpm exec husky init`. The
+     `.husky/pre-commit` hook must run **all "follow" checks and pass before any
+     commit** — wire them in this order and fail the commit on the first error:
+     ```sh
+     pnpm exec lint-staged          # eslint --fix + prettier on staged (house overlay)
+     pnpm exec tsc --noEmit         # typecheck
+     pnpm test -- --coverage        # tests + >85% coverage gate
+     ```
+     Same checks run in CI (Step 7) so the hook and CI never disagree.
    - `lint-staged.config.mjs` at repo root — run ESLint + Prettier on staged
      files only, using gts's underlying tools (the gts/Google config is still
      in force, so hook and CI never disagree). Do NOT use `gts fix` here: it
@@ -127,10 +165,19 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
      rules enforced, author them in a tiny local `eslint-plugin-house` — that is
      custom rule work, out of scope for a clean scaffold.
 9. **Health + observability.** `/health` endpoint; request logging on; a
-   `README.md` with run/test/deploy instructions.
-10. **Register.** Add the repo to the Batanga registry `modules.yaml` ONLY if
-    it exposes a reusable package; otherwise add it to the project onboarding
-    config (`config/projects/`). Commit message style: conventional commits.
+   `README.md` with run/test/deploy instructions. Commit message style:
+   conventional commits.
+10. **Review gate before merge.** Before opening / merging a PR to `develop`,
+    run on the diff:
+    - **code-reviewer agent** — code quality, every ask in this skill (and the
+      Gnapi standards) followed strictly, maintainability prioritized. Resolve
+      all CRITICAL/HIGH findings.
+    - **QA / e2e agent** — exercises the service end-to-end; critical flows pass.
+
+    The real enforcement is **server-side**: branch protection (Step 1) +
+    required CI status checks (Step 7) mean the PR cannot merge until checks
+    pass. Wire the reviewer/QA jobs as required checks if you want them blocking.
+    Then open the PR to `develop`.
 
 ## Verification
 
