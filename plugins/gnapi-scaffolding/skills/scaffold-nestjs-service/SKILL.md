@@ -20,8 +20,7 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
 - The `gnapi-standards` plugin's pre-code hook injects the full Gnapi coding
   standards (SOLID, DRY, naming, why/how comments, no hard-coded literals,
   structured logging + tracing, error management with catch-must-act, TDD) on
-  the first source write of a session, and reminds you of the pre-push review
-  gate (Step 10). This skill assumes those standards hold.
+  the first source write of a session. This skill assumes those standards hold.
 
 ## Steps
 
@@ -168,20 +167,17 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
 9. **Health + observability.** `/health` endpoint; request logging on; a
    `README.md` with run/test/deploy instructions. Commit message style:
    conventional commits.
-10. **Pre-push review gate (ENFORCED — `git push` is blocked until approved).**
-    The `gnapi-standards` plugin's Bash hook **denies** any `git push` whose HEAD
-    commit has not been approved. To get past it, on the exact diff being pushed:
-    - **code-reviewer agent** — reviews code quality, confirms every ask in this
-      skill (and the Gnapi standards) is followed strictly, and that
-      maintainability is the priority. Address all CRITICAL/HIGH findings.
+10. **Review gate before merge.** Before opening / merging a PR to `develop`,
+    run on the diff:
+    - **code-reviewer agent** — code quality, every ask in this skill (and the
+      Gnapi standards) followed strictly, maintainability prioritized. Resolve
+      all CRITICAL/HIGH findings.
     - **QA / e2e agent** — exercises the service end-to-end; critical flows pass.
 
-    Only once both are green, record approval for the current commit:
-    ```sh
-    git rev-parse HEAD > "$(git rev-parse --absolute-git-dir)/gnapi-review-approved"
-    ```
-    then `git push`. Any new commit changes the SHA and re-arms the gate, so
-    re-review after every change. (Then open the PR to `develop`.)
+    The real enforcement is **server-side**: branch protection (Step 1) +
+    required CI status checks (Step 7) mean the PR cannot merge until checks
+    pass. Wire the reviewer/QA jobs as required checks if you want them blocking.
+    Then open the PR to `develop`.
 
 ## Verification
 

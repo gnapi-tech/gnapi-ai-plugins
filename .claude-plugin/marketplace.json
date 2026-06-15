@@ -21,7 +21,7 @@
     {
       "name": "gnapi-standards",
       "source": "./plugins/gnapi-standards",
-      "description": "Pre-code hook that injects Gnapi coding standards (TDD, SOLID, DRY, naming, why/how comments, no hard-coded literals, structured logging + tracing, error management with catch-must-act) before Claude writes source files, plus an enforced pre-push gate that blocks git push until the code-reviewer + QA review gate is approved.",
+      "description": "Pre-code hook that injects Gnapi coding standards (TDD, SOLID, DRY, naming, why/how comments, no hard-coded literals, structured logging + tracing, error management with catch-must-act) into context before Claude writes source files.",
       "version": "0.1.0",
       "author": {
         "name": "Gnapi",
