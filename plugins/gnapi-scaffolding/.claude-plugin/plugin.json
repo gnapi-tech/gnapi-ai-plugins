@@ -7,7 +7,7 @@
     "name": "Gnapi",
     "url": "https://github.com/gnapi-tech"
   },
-  "repository": "https://github.com/gnapi-tech/gnapi-claude",
+  "repository": "https://github.com/gnapi-tech/gnapi-ai-plugins",
   "license": "UNLICENSED",
   "keywords": ["nestjs", "scaffold", "house-rules", "gts", "lint", "ci"]
 }
