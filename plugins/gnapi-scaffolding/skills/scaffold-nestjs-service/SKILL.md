@@ -1,6 +1,6 @@
 ---
 name: scaffold-nestjs-service
-description: Use when creating a new NestJS service for Gnapi — scaffolds a production-grade service that complies with every house rule (TDD, pnpm, gts/Google lint + prettier, husky pre-commit, zod env validation, structured logging + tracing, error catalog, i18n, CI with coverage gate) from day one. Params service_name (kebab-case), github_org.
+description: Use when the user wants to create, scaffold, bootstrap, set up, spin up, or start a new NestJS service / microservice / backend API / service repo for Gnapi. Triggers — "create a nestjs service", "new nestjs microservice", "scaffold a nestjs/backend service", "spin up a nestjs api", "bootstrap a new service", "start a new gnapi service". Produces a production-grade NestJS service that complies with every Gnapi house rule from day one (TDD, pnpm, gts/Google lint + prettier, husky pre-commit follow-checks, zod env validation, structured logging + tracing, error catalog, i18n, >85% coverage, CI). Params service_name (kebab-case), github_org.
 ---
 
 # Skill: scaffold-nestjs-service
