@@ -1,0 +1,162 @@
+---
+name: scaffold-nestjs-service
+description: Use when creating a new NestJS service for Gnapi — scaffolds a production-grade service that complies with every house rule (pnpm, gts/Google lint + prettier, husky pre-commit, zod env validation, structured logging, error catalog, i18n, CI with coverage gate) from day one. Params service_name (kebab-case), github_org.
+---
+
+# Skill: scaffold-nestjs-service
+
+Scaffold a production-grade NestJS service that complies with every house rule
+from day one. Params: `service_name` (kebab-case), `github_org`.
+
+## Steps
+
+1. **Repository.** Create `<github_org>/<service_name>` (private). Default
+   branch `main`; create `develop` from it. Enable branch protection on both:
+   require PR review, forbid force-push, require status checks.
+2. **Scaffold.** `pnpm dlx @nestjs/cli new <service_name> --package-manager pnpm`
+   (pnpm is the house package manager). Let the CLI create its `.gitignore`
+   (do NOT pass `--skip-git` without immediately writing a `.gitignore`
+   containing `node_modules/`, `dist/`, `build/`, `.env` — see the gotcha
+   below). Then replace tooling with house standards:
+   - `pnpm dlx gts init --yes`.
+   - **De-duplicate lint/format configs (REQUIRED).** Modern `@nestjs/cli`
+     ships its own flat ESLint (`eslint.config.mjs`) + `.prettierrc`, and gts
+     ships `eslint.config.js` + `eslint.ignores.js` + `.prettierrc.js`. Two of
+     each collide and `gts lint` even flags gts's own files. Delete nest's
+     pair, keep gts's: `rm -f eslint.config.mjs .prettierrc`.
+   - **tsconfig.json (REQUIRED merge).** `gts init` only sets `extends`; it does
+     NOT add the options Nest needs, so the sample app won't compile. Write:
+     ```jsonc
+     {
+       "extends": "./node_modules/gts/tsconfig-google.json",
+       "compilerOptions": {
+         "rootDir": ".", "outDir": "dist",
+         "experimentalDecorators": true, "emitDecoratorMetadata": true,
+         "esModuleInterop": true, "strictPropertyInitialization": false,
+         "declaration": false, "composite": false
+       },
+       "include": ["src/**/*.ts", "test/**/*.ts"]
+     }
+     ```
+   - **Fix nest's `main.ts`.** Its template `bootstrap();` trips gts
+     `@typescript-eslint/no-floating-promises`; change to `void bootstrap();`.
+   - **Prettier (Google config).** `gts init` writes `.prettierrc.js`
+     re-exporting `gts/.prettierrc.json` — Google's Prettier config (single
+     quotes, trailing commas, no bracket spacing, 80 cols). Keep it; never
+     hand-edit format rules. Add `package.json` scripts `"format": "gts fix"`
+     and `"format:check": "gts lint"`. (`gts fix` = ESLint autofix + Prettier
+     write; `gts lint` checks both.)
+   - `tsconfig.build.json` excluding tests; jest with
+     `coverageThreshold {lines: 80, branches: 70}`.
+3. **Structured logging.** `pnpm add nestjs-pino pino-http`; register
+   `LoggerModule.forRoot` with secret-redacting `redact` list; no `console.*`
+   anywhere (lint-enforced).
+4. **Error catalog.** Create `src/common/errors/error-codes.ts` with numbered
+   codes (`<SVC>-1xxx` input, `2xxx` domain, `3xxx` integration, `4000`
+   internal), an `AppError` class carrying code + context, and a global
+   exception filter registered via `APP_FILTER` that never leaks internals.
+5. **i18n from day 1.** `pnpm add nestjs-i18n`; `src/i18n/en/messages.json`; every
+   user-facing string goes through it; add eslint `i18next/no-literal-string`
+   for any UI-facing packages.
+6. **Env validation.** zod schema in `src/config/env.schema.ts`, fail-fast at
+   boot, wired into `ConfigModule.forRoot({validate})`.
+7. **CI.** `.github/workflows/ci.yml`: on PR → `pnpm install --frozen-lockfile`
+   (use `pnpm/action-setup` + `actions/setup-node` with `cache: pnpm`), lint
+   (`gts lint`), typecheck (`tsc --noEmit`), test with coverage gate. Mark the
+   workflow as a required status check. Commit `pnpm-lock.yaml`.
+8. **Guard rails.** `CODEOWNERS` (org engineering team); `.env.example` with
+   every variable documented and no real values; **pre-commit hook** via husky
+   + lint-staged:
+   - **`.gitignore` MUST exclude `node_modules/` BEFORE the first `git add`.**
+     If `node_modules` is ever tracked, lint-staged 16 discovers nested
+     template `package.json` files (e.g. `@nestjs/schematics/.../files/ts/`)
+     that carry a deprecated `tslint`/`git add` lint-staged block and aborts
+     every commit with a validation error. (Verified failure mode.)
+   - `pnpm add -D husky lint-staged` → `pnpm exec husky init` →
+     `.husky/pre-commit` runs `pnpm exec lint-staged` then the related tests.
+   - `lint-staged.config.mjs` at repo root — run ESLint + Prettier on staged
+     files only, using gts's underlying tools (the gts/Google config is still
+     in force, so hook and CI never disagree). Do NOT use `gts fix` here: it
+     ignores file-path args, so it can't lint just the staged set.
+     ```js
+     export default {
+       '*.ts': ['eslint --fix', 'prettier --write'],
+       '*.{json,md,yml,yaml}': ['prettier --write'],
+     };
+     ```
+   - The hook autofixes formatting and re-stages; a file that still fails
+     `eslint` aborts the commit.
+   - **House-rule lint overlay (convention guard).** Append a house-rules block
+     to gts's `eslint.config.js` (after the spread of the gts config) so the
+     mechanically-checkable conventions fail the hook AND CI from one source.
+     `pnpm add -D eslint-plugin-i18next`, then:
+     ```js
+     // ...spread gts config first, then:
+     {
+       files: ['src/**/*.ts'],
+       rules: {
+         'max-lines': ['error', {max: 800, skipBlankLines: true, skipComments: true}],
+         'max-lines-per-function': ['error', {max: 50, skipBlankLines: true, skipComments: true}],
+         'max-depth': ['error', 4],
+         'no-console': 'error',                                  // structured logging only
+         '@typescript-eslint/no-floating-promises': 'error',     // no unhandled rejections
+         'no-magic-numbers': ['error', {ignore: [0, 1, -1], ignoreEnums: true, ignoreReadonlyClassProperties: true}],
+         '@typescript-eslint/naming-convention': [
+           'error',
+           {selector: 'typeLike', format: ['PascalCase']},
+           {selector: 'enumMember', format: ['UPPER_CASE']},
+           {selector: 'variableLike', format: ['camelCase', 'UPPER_CASE', 'PascalCase'], leadingUnderscore: 'allow'},
+         ],
+       },
+     },
+     {                                                            // i18n: no user-facing literals
+       files: ['src/**/*.ts'],
+       ignores: ['**/*.spec.ts', '**/*.entity.ts', '**/constants/**', '**/*.module.ts'],
+       plugins: {i18next: require('eslint-plugin-i18next')},
+       rules: {'i18next/no-literal-string': ['warn', {markupOnly: false}]},
+     },
+     {                                                            // tests relax size/magic-number
+       files: ['**/*.spec.ts', 'test/**/*.ts'],
+       rules: {'max-lines-per-function': 'off', 'no-magic-numbers': 'off'},
+     },
+     ```
+     House rules NOT mechanically enforceable here (keep in review + the coder
+     brief, not lint): error-number format `<SVC>-Nxxx`, catch-blocks must act
+     not just log, constants-live-in-separate-files, meaningful why/how
+     comments, doc/design-before-code. If you want the error-number + catch-act
+     rules enforced, author them in a tiny local `eslint-plugin-house` — that is
+     custom rule work, out of scope for a clean scaffold.
+9. **Health + observability.** `/health` endpoint; request logging on; a
+   `README.md` with run/test/deploy instructions.
+10. **Register.** Add the repo to the Batanga registry `modules.yaml` ONLY if
+    it exposes a reusable package; otherwise add it to the project onboarding
+    config (`config/projects/`). Commit message style: conventional commits.
+
+## Verification
+
+- `pnpm lint && pnpm exec tsc --noEmit && pnpm test` all green on the fresh
+  clone.
+- `gts lint` reports zero Prettier/ESLint diffs (Google config in force).
+- A deliberately mis-formatted staged `.ts` is auto-fixed by the pre-commit
+  hook; an unfixable lint error aborts the commit.
+- CI passes on a no-op PR.
+- A wrong `.env` fails boot with the offending variable named.
+
+## Verified gotchas (smoke 2026-06, @nestjs/cli 11 · gts 7 · lint-staged 16)
+
+A real dry-run of this playbook surfaced five breakages; the steps above already
+encode the fixes. Keep them in mind:
+
+1. **Dual ESLint + Prettier configs collide** — nest and gts each ship a flat
+   ESLint config and a Prettier config. Delete nest's (`eslint.config.mjs`,
+   `.prettierrc`); keep gts's (Step 2).
+2. **`gts init` tsconfig is insufficient for Nest** — must add
+   `experimentalDecorators`, `emitDecoratorMetadata`, `esModuleInterop`,
+   `strictPropertyInitialization:false` or the sample app fails `tsc` (Step 2).
+3. **Nest's `main.ts` trips `no-floating-promises`** — `void bootstrap()`
+   (Step 2).
+4. **`gts fix` ignores file-path args** — unusable in lint-staged; use
+   `eslint --fix` + `prettier --write` instead (Step 8).
+5. **`node_modules` tracked before the hook lands** — lint-staged discovers
+   deprecated template configs and aborts every commit; `.gitignore` first
+   (Step 8).

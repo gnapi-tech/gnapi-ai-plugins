@@ -1,0 +1,22 @@
+{
+  "name": "gnapi-claude",
+  "owner": {
+    "name": "Gnapi",
+    "url": "https://github.com/gnapi-tech"
+  },
+  "metadata": {
+    "description": "Gnapi team's Claude Code plugin marketplace — shared skills, commands, and agents."
+  },
+  "plugins": [
+    {
+      "name": "gnapi-scaffolding",
+      "source": "./plugins/gnapi-scaffolding",
+      "description": "Scaffolders that bake Gnapi house rules (lint, prettier, pre-commit, CI) into new services from day one.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Gnapi",
+        "url": "https://github.com/gnapi-tech"
+      }
+    }
+  ]
+}
