@@ -1,0 +1,13 @@
+{
+  "name": "gnapi-scaffolding",
+  "displayName": "Gnapi Scaffolding",
+  "version": "0.1.0",
+  "description": "Scaffolders that bake Gnapi house rules (lint, prettier, pre-commit, CI, env validation) into new services from day one.",
+  "author": {
+    "name": "Gnapi",
+    "url": "https://github.com/gnapi-tech"
+  },
+  "repository": "https://github.com/gnapi-tech/gnapi-claude",
+  "license": "UNLICENSED",
+  "keywords": ["nestjs", "scaffold", "house-rules", "gts", "lint", "ci"]
+}
