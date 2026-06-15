@@ -1,4 +1,4 @@
-# gnapi-claude
+# gnapi-ai-plugins
 
 Gnapi team's [Claude Code](https://code.claude.com) plugin marketplace — shared
 skills, commands, and agents. Add it once and every team member gets the same
@@ -9,14 +9,14 @@ house-rule tooling inside Claude Code.
 In any Claude Code session:
 
 ```shell
-/plugin marketplace add gnapi-tech/gnapi-claude
-/plugin install gnapi-scaffolding@gnapi-claude
+/plugin marketplace add gnapi-tech/gnapi-ai-plugins
+/plugin install gnapi-scaffolding@gnapi-ai-plugins
 ```
 
 Pull future updates with:
 
 ```shell
-/plugin marketplace update gnapi-claude
+/plugin marketplace update gnapi-ai-plugins
 /plugin update gnapi-scaffolding
 ```
 
@@ -99,7 +99,7 @@ what does/doesn't carry over: see [`portable/README.md`](portable/README.md).
 ├── .claude-plugin/
 │   └── marketplace.json              # marketplace catalog (lists all plugins)
 ├── .github/workflows/
-│   └── shims.yml                     # fails if AGENTS.md is out of date
+│   └── shims.yml                     # fails if any generated shim is out of date
 ├── plugins/
 │   ├── gnapi-scaffolding/
 │   │   ├── .claude-plugin/

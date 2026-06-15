@@ -108,8 +108,8 @@ On **Claude Code**, install the native plugin — it provides automatic skill
 triggering and the \`gnapi-standards\` PreToolUse hook (no manual steps):
 
 \`\`\`shell
-/plugin marketplace add gnapi-tech/gnapi-claude
-/plugin install gnapi-scaffolding@gnapi-claude
+/plugin marketplace add gnapi-tech/gnapi-ai-plugins
+/plugin install gnapi-scaffolding@gnapi-ai-plugins
 \`\`\`
 
 Skill source of truth: \`${SKILL_PATH}\`. The portable, flattened version for

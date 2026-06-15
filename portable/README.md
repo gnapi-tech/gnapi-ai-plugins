@@ -37,7 +37,7 @@ edit without a regenerate can't merge.
 
 | Harness | How |
 |---------|-----|
-| **Claude Code** | Native plugin (auto-trigger + hook). `/plugin install gnapi-scaffolding@gnapi-claude`. Shims not needed. |
+| **Claude Code** | Native plugin (auto-trigger + hook). `/plugin install gnapi-scaffolding@gnapi-ai-plugins`. Shims not needed. |
 | **OpenAI Codex** | Reads `AGENTS.md` / `.codex/AGENTS.md` automatically. Copy into the target repo (or use this repo). |
 | **Cursor** | `.cursor/rules/gnapi.mdc` applies automatically when present in the project. |
 | **opencode** | `.opencode/opencode.json` points `instructions` at `AGENTS.md`. |
