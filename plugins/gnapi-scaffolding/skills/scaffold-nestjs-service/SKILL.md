@@ -12,12 +12,16 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
 
 - **TDD.** Every feature and bugfix is test-first: write the failing test
   (RED), the minimal code to pass (GREEN), then refactor (IMPROVE). No
-  production code ships without a test driving it. The coverage gate (Step 2)
-  is the floor, not the goal.
+  production code ships without a test driving it. Coverage must stay **> 85%**
+  (Step 2 gate).
+- **SOLID & DRY.** Single-responsibility units that depend on abstractions;
+  small substitutable interfaces; prefer composition. No copy-paste logic —
+  one well-named home and one source of truth per rule.
 - The `gnapi-standards` plugin's pre-code hook injects the full Gnapi coding
-  standards (naming, why/how comments, no hard-coded literals, structured
-  logging + tracing, error management with catch-must-act, TDD) on the first
-  source write of a session. This skill assumes those standards hold.
+  standards (SOLID, DRY, naming, why/how comments, no hard-coded literals,
+  structured logging + tracing, error management with catch-must-act, TDD) on
+  the first source write of a session, and reminds you of the pre-push review
+  gate (Step 10). This skill assumes those standards hold.
 
 ## Steps
 
@@ -58,7 +62,8 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
      and `"format:check": "gts lint"`. (`gts fix` = ESLint autofix + Prettier
      write; `gts lint` checks both.)
    - `tsconfig.build.json` excluding tests; jest with
-     `coverageThreshold {lines: 80, branches: 70}`.
+     `coverageThreshold {statements: 85, lines: 85, functions: 85, branches: 85}`
+     (house floor is **> 85%**).
 3. **Structured logging & tracing.** `pnpm add nestjs-pino pino-http`; register
    `LoggerModule.forRoot` with a secret-redacting `redact` list and a
    request-id / trace-correlation field on every log line; no `console.*`
@@ -99,8 +104,15 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
      template `package.json` files (e.g. `@nestjs/schematics/.../files/ts/`)
      that carry a deprecated `tslint`/`git add` lint-staged block and aborts
      every commit with a validation error. (Verified failure mode.)
-   - `pnpm add -D husky lint-staged` → `pnpm exec husky init` →
-     `.husky/pre-commit` runs `pnpm exec lint-staged` then the related tests.
+   - `pnpm add -D husky lint-staged` → `pnpm exec husky init`. The
+     `.husky/pre-commit` hook must run **all "follow" checks and pass before any
+     commit** — wire them in this order and fail the commit on the first error:
+     ```sh
+     pnpm exec lint-staged          # eslint --fix + prettier on staged (house overlay)
+     pnpm exec tsc --noEmit         # typecheck
+     pnpm test -- --coverage        # tests + >85% coverage gate
+     ```
+     Same checks run in CI (Step 7) so the hook and CI never disagree.
    - `lint-staged.config.mjs` at repo root — run ESLint + Prettier on staged
      files only, using gts's underlying tools (the gts/Google config is still
      in force, so hook and CI never disagree). Do NOT use `gts fix` here: it
@@ -156,6 +168,17 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
 9. **Health + observability.** `/health` endpoint; request logging on; a
    `README.md` with run/test/deploy instructions. Commit message style:
    conventional commits.
+10. **Pre-push review gate (REQUIRED before every push to a feature branch).**
+    Do not `git push` a feature branch until both of these have run and passed
+    on the exact diff being pushed:
+    - **code-reviewer agent** — reviews code quality, confirms every ask in this
+      skill (and the Gnapi standards) is followed strictly, and that
+      maintainability is the priority. Address all CRITICAL/HIGH findings before
+      pushing.
+    - **QA / e2e agent** — exercises the service end-to-end and confirms the
+      critical flows pass.
+    Only push once both are green. The `gnapi-standards` plugin reminds you of
+    this gate when it sees a `git push`. (Then open the PR to `develop`.)
 
 ## Verification
 

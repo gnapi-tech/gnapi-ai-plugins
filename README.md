@@ -45,7 +45,9 @@ source-file write of a session** (`Write`/`Edit`/`MultiEdit`/`NotebookEdit` on a
 `.ts/.js/.py/.go/...` file) a `PreToolUse` hook injects the Gnapi coding
 standards into Claude's context:
 
-- **TDD** — test-first (RED → GREEN → refactor), no production code without a test.
+- **TDD** — test-first (RED → GREEN → refactor), no production code without a
+  test; keep coverage **> 85%**.
+- **SOLID & DRY** — single-responsibility, depend on abstractions, no copy-paste.
 - **Naming** — meaningful, intent-revealing; no cryptic abbreviations.
 - **Comments** — capture the hidden *why* and *how*, not the obvious *what*.
 - **No hard-coded literals** — extract to named constants in their own files.
@@ -53,11 +55,16 @@ standards into Claude's context:
 - **Error management** — error-numbered errors, no unhandled exceptions, and
   catch blocks that take a real action + fallback (never log-and-swallow).
 
-The hook is **non-blocking** (it only injects guidance) and fires **once per
-session** to stay quiet. It needs `node` on `PATH`; if absent it no-ops.
-The machine-checkable subset (naming format, `no-console`, `no-magic-numbers`,
-`no-floating-promises`) is additionally enforced at commit/CI by
-`gnapi-scaffolding`'s lint overlay.
+It also adds a **pre-push review gate**: on a `git push` a second hook reminds
+you to first run the **code-reviewer agent** (quality, asks-followed,
+maintainability) and a **QA / e2e agent** before pushing a feature branch.
+
+Both hooks are **non-blocking** (they only inject guidance). The standards hook
+fires **once per session**; the push reminder fires per `git push`. They need
+`node` on `PATH`; if absent they no-op. The machine-checkable subset (naming
+format, `no-console`, `no-magic-numbers`, `no-floating-promises`, coverage) is
+additionally enforced at commit/CI by `gnapi-scaffolding`'s lint overlay and
+pre-commit hook.
 
 ## Repository layout
 
@@ -76,10 +83,12 @@ The machine-checkable subset (naming format, `no-console`, `no-magic-numbers`,
 │       ├── .claude-plugin/
 │       │   └── plugin.json            # plugin manifest
 │       ├── hooks/
-│       │   └── hooks.json             # PreToolUse matcher → script
+│       │   └── hooks.json             # PreToolUse matchers → scripts
 │       └── scripts/
-│           ├── precode-standards.sh   # node guard / launcher
-│           └── precode-standards.js   # injects standards as additionalContext
+│           ├── precode-standards.sh   # node guard / launcher (Write/Edit)
+│           ├── precode-standards.js   # injects standards as additionalContext
+│           ├── prepush-gate.sh        # node guard / launcher (Bash)
+│           └── prepush-gate.js        # reminds of review gate on git push
 └── README.md
 ```
 
