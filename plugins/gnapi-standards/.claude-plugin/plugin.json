@@ -1,0 +1,14 @@
+{
+  "name": "gnapi-standards",
+  "displayName": "Gnapi Coding Standards",
+  "version": "0.1.0",
+  "description": "Injects Gnapi coding standards (TDD, naming, why/how comments, no hard-coded literals, structured logging + tracing, error management with catch-must-act) as a pre-code reminder before Claude writes source files.",
+  "author": {
+    "name": "Gnapi",
+    "url": "https://github.com/gnapi-tech"
+  },
+  "repository": "https://github.com/gnapi-tech/gnapi-claude",
+  "license": "UNLICENSED",
+  "keywords": ["standards", "tdd", "conventions", "hook", "pre-code"],
+  "hooks": "./hooks/hooks.json"
+}

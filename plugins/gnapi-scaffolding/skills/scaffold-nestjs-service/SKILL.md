@@ -1,12 +1,23 @@
 ---
 name: scaffold-nestjs-service
-description: Use when creating a new NestJS service for Gnapi — scaffolds a production-grade service that complies with every house rule (pnpm, gts/Google lint + prettier, husky pre-commit, zod env validation, structured logging, error catalog, i18n, CI with coverage gate) from day one. Params service_name (kebab-case), github_org.
+description: Use when creating a new NestJS service for Gnapi — scaffolds a production-grade service that complies with every house rule (TDD, pnpm, gts/Google lint + prettier, husky pre-commit, zod env validation, structured logging + tracing, error catalog, i18n, CI with coverage gate) from day one. Params service_name (kebab-case), github_org.
 ---
 
 # Skill: scaffold-nestjs-service
 
 Scaffold a production-grade NestJS service that complies with every house rule
 from day one. Params: `service_name` (kebab-case), `github_org`.
+
+## Before you write any code (non-negotiable)
+
+- **TDD.** Every feature and bugfix is test-first: write the failing test
+  (RED), the minimal code to pass (GREEN), then refactor (IMPROVE). No
+  production code ships without a test driving it. The coverage gate (Step 2)
+  is the floor, not the goal.
+- The `gnapi-standards` plugin's pre-code hook injects the full Gnapi coding
+  standards (naming, why/how comments, no hard-coded literals, structured
+  logging + tracing, error management with catch-must-act, TDD) on the first
+  source write of a session. This skill assumes those standards hold.
 
 ## Steps
 
@@ -48,13 +59,29 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
      write; `gts lint` checks both.)
    - `tsconfig.build.json` excluding tests; jest with
      `coverageThreshold {lines: 80, branches: 70}`.
-3. **Structured logging.** `pnpm add nestjs-pino pino-http`; register
-   `LoggerModule.forRoot` with secret-redacting `redact` list; no `console.*`
-   anywhere (lint-enforced).
-4. **Error catalog.** Create `src/common/errors/error-codes.ts` with numbered
+3. **Structured logging & tracing.** `pnpm add nestjs-pino pino-http`; register
+   `LoggerModule.forRoot` with a secret-redacting `redact` list and a
+   request-id / trace-correlation field on every log line; no `console.*`
+   anywhere (lint-enforced). **Decorate only in dev:** in `development` use the
+   `pino-pretty` transport (human-readable, colorized); in every other env emit
+   raw JSON (no transport) so log shippers parse it. Gate on `NODE_ENV`:
+   ```ts
+   transport:
+     process.env.NODE_ENV === 'development'
+       ? {target: 'pino-pretty', options: {singleLine: true}}
+       : undefined,
+   ```
+   (`pnpm add -D pino-pretty`.)
+4. **Error management.** Create `src/common/errors/error-codes.ts` with numbered
    codes (`<SVC>-1xxx` input, `2xxx` domain, `3xxx` integration, `4000`
-   internal), an `AppError` class carrying code + context, and a global
-   exception filter registered via `APP_FILTER` that never leaks internals.
+   internal) and an `AppError` class carrying code + context. Register a global
+   exception filter via `APP_FILTER` that maps thrown errors to their
+   error-number and never leaks internals. Rules:
+   - Every thrown error is a well-defined `AppError` with a number — no
+     anonymous `throw new Error('...')`.
+   - **No unhandled exceptions / floating promises** (lint-enforced, Step 8).
+   - **Catch blocks must take a real action + fallback** — retry, compensate,
+     degrade gracefully, or surface a typed `AppError`. Never log-and-swallow.
 5. **i18n from day 1.** `pnpm add nestjs-i18n`; `src/i18n/en/messages.json`; every
    user-facing string goes through it; add eslint `i18next/no-literal-string`
    for any UI-facing packages.
@@ -127,10 +154,8 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
      rules enforced, author them in a tiny local `eslint-plugin-house` — that is
      custom rule work, out of scope for a clean scaffold.
 9. **Health + observability.** `/health` endpoint; request logging on; a
-   `README.md` with run/test/deploy instructions.
-10. **Register.** Add the repo to the Batanga registry `modules.yaml` ONLY if
-    it exposes a reusable package; otherwise add it to the project onboarding
-    config (`config/projects/`). Commit message style: conventional commits.
+   `README.md` with run/test/deploy instructions. Commit message style:
+   conventional commits.
 
 ## Verification
 
