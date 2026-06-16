@@ -126,9 +126,18 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
    - **No unhandled exceptions / floating promises** (lint-enforced, Step 8).
    - **Catch blocks must take a real action + fallback** — retry, compensate,
      degrade gracefully, or surface a typed `AppError`. Never log-and-swallow.
+   - The filter's i18n message keys (`ERROR_MESSAGE_KEY`) are namespaced by the
+     translation filename — use `messages.errors.*`, not `errors.*` (see Step 5).
 5. **i18n from day 1.** `pnpm add nestjs-i18n`; `src/i18n/en/messages.json`; every
    user-facing string goes through it; add eslint `i18next/no-literal-string`
    for any UI-facing packages.
+   - **Keys are namespaced by the JSON filename (REQUIRED).** nestjs-i18n prefixes
+     every key with the translation file's name. With `messages.json`, the key for
+     `{"app":{"hello":...}}` is **`messages.app.hello`**, NOT `app.hello`. Calling
+     `i18n.translate('app.hello')` silently returns the raw key string to the
+     client. So every key — in Step 4's `ERROR_MESSAGE_KEY` and everywhere else —
+     must be `messages.*` (e.g. `messages.errors.validationFailed`,
+     `messages.app.hello`). (Verified failure mode; see gotcha 6.)
 6. **Env validation.** zod schema in `src/config/env.schema.ts`, fail-fast at
    boot, wired into `ConfigModule.forRoot({validate})`.
 7. **CI.** `.github/workflows/ci.yml`: on PR → `pnpm install --frozen-lockfile`
@@ -224,6 +233,10 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
 - `pnpm lint && pnpm exec tsc --noEmit && pnpm test` all green on the fresh
   clone.
 - `gts lint` reports zero Prettier/ESLint diffs (Google config in force).
+- **`pnpm test:e2e` is green (REQUIRED).** The i18n filename-namespace defect
+  (gotcha 6) is invisible to unit tests + the coverage gate — unit specs mock
+  `I18nService` — and only the default Nest e2e (`GET /` expects the greeting)
+  catches it. Never open the PR on unit + lint alone; run e2e.
 - A deliberately mis-formatted staged `.ts` is auto-fixed by the pre-commit
   hook; an unfixable lint error aborts the commit.
 - CI passes on a no-op PR.
@@ -231,7 +244,7 @@ from day one. Params: `service_name` (kebab-case), `github_org`.
 
 ## Verified gotchas (smoke 2026-06, @nestjs/cli 11 · gts 7 · lint-staged 16)
 
-A real dry-run of this playbook surfaced five breakages; the steps above already
+A real dry-run of this playbook surfaced six breakages; the steps above already
 encode the fixes. Keep them in mind:
 
 1. **Dual ESLint + Prettier configs collide** — nest and gts each ship a flat
@@ -247,3 +260,7 @@ encode the fixes. Keep them in mind:
 5. **`node_modules` tracked before the hook lands** — lint-staged discovers
    deprecated template configs and aborts every commit; `.gitignore` first
    (Step 8).
+6. **nestjs-i18n namespaces keys by filename** — `messages.json` keys resolve as
+   `messages.*`, so `i18n.translate('app.hello')` leaks the raw key `app.hello`
+   to clients. Prefix every key with `messages.` (Steps 4 + 5). Unit tests that
+   mock `I18nService` hide it; `pnpm test:e2e` catches it (Verification).
