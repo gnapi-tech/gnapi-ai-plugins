@@ -9,6 +9,5 @@
   },
   "repository": "https://github.com/gnapi-tech/gnapi-ai-plugins",
   "license": "UNLICENSED",
-  "keywords": ["standards", "tdd", "solid", "dry", "conventions", "hook", "pre-code"],
-  "hooks": "./hooks/hooks.json"
+  "keywords": ["standards", "tdd", "solid", "dry", "conventions", "hook", "pre-code"]
 }
