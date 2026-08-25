@@ -6,6 +6,8 @@ house-rule tooling inside Claude Code.
 
 ## Install
 
+### Claude Code
+
 In any Claude Code session:
 
 ```shell
@@ -19,6 +21,41 @@ Pull future updates with:
 /plugin marketplace update gnapi-ai-plugins
 /plugin update gnapi-scaffolding
 ```
+
+### OpenAI Codex
+
+Codex has no plugin marketplace — it reads `AGENTS.md` (and `.codex/AGENTS.md`)
+from the repo it's working in. So install = copy the generated shims into the
+target repo:
+
+```shell
+git clone https://github.com/gnapi-tech/gnapi-ai-plugins /tmp/gnapi-ai-plugins
+cd /path/to/your-repo
+cp /tmp/gnapi-ai-plugins/AGENTS.md .            # playbook + inlined standards
+cp -R /tmp/gnapi-ai-plugins/.codex .            # .codex/AGENTS.md + reference config.toml
+```
+
+If the repo already has an `AGENTS.md`, keep yours and append the Gnapi one
+instead of overwriting:
+
+```shell
+cat /tmp/gnapi-ai-plugins/AGENTS.md >> AGENTS.md
+```
+
+`.codex/config.toml` is a **reference** config (`approval_policy`,
+`sandbox_mode`, `web_search`) — keep it project-local or copy it to
+`~/.codex/config.toml` for every project. Start Codex in the repo root and it
+picks the instructions up automatically:
+
+```shell
+codex
+```
+
+Pull updates by re-running the copy after `git pull` in the clone. Two caveats
+off Claude: no auto-trigger (ask for the scaffold explicitly) and no PreToolUse
+hook (the standards are inlined into `AGENTS.md` instead). Other harnesses —
+Cursor, opencode, Antigravity, Gemini CLI — see
+[Using on other agents](#using-on-other-agents-codex-cursor-opencode-antigravity-gemini).
 
 ## Plugins
 
