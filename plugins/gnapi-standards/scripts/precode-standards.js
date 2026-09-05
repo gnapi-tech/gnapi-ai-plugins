@@ -10,7 +10,9 @@ const fs = require('fs');
 const path = require('path');
 
 // File types we consider "source code" worth gating.
-const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|java|rb|rs|kt|kts|cs|php|swift|scala)$/i;
+// A non-letter lookahead rather than an end anchor, so the same pattern also
+// matches a path embedded in a Bash command string, not just a bare file_path.
+const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|java|rb|rs|kt|kts|cs|php|swift|scala)(?![A-Za-z])/i;
 
 const STANDARDS = [
   'Gnapi coding standards — apply to ALL code you write in this session:',
@@ -57,8 +59,16 @@ async function main() {
   }
 
   const toolInput = payload.tool_input || {};
-  const file = toolInput.file_path || toolInput.notebook_path || '';
-  if (!SOURCE_RE.test(file)) process.exit(0); // not a source file
+  // Bash edits (sed -i, heredoc redirects) carry no file_path, so fall back to
+  // scanning the raw command text. Deliberately loose: a false positive only
+  // injects the standards slightly early, which is harmless, whereas a false
+  // negative loses them for the entire session.
+  const file =
+    toolInput.file_path ||
+    toolInput.notebook_path ||
+    (typeof toolInput.command === 'string' ? toolInput.command : '') ||
+    '';
+  if (!SOURCE_RE.test(file)) process.exit(0); // no source file in play
 
   // Inject at most once per session, tracked by a marker in the plugin data dir.
   const dataDir = process.env.CLAUDE_PLUGIN_DATA || process.argv[2] || '';
